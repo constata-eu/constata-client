@@ -1,0 +1,38 @@
+[package]
+name = "constata_client"
+version = "0.1.0"
+authors = ["Constata <hola@constata.eu>"]
+edition = "2018"
+
+[dependencies]
+dialoguer = "0.8.0"
+ureq = { version = "*", features = ["json", "charset"] }
+simplestcrypt = "*"
+serde = "1.0"
+base64 = "0.13.0"
+base64-serde = "0.6.1"
+serde_derive = "1.0"
+serde_json = "1.0"
+serde_with = { version = "1.6.4", features = ["hex"]}
+clap = "2.33.3"
+chrono = { version = "0.4", features = ["serde"] }
+bitcoin-wallet = { git = "https://github.com/rust-bitcoin/rust-wallet" }
+thiserror = "1.0"
+sha2 = "0.9.2"
+
+[dependencies.bitcoin]
+version = "0.26.0"
+features = ["base64", "use-serde"]
+
+[dev-dependencies]
+fantoccini = "0.17.4"
+futures = "0.3.15"
+tokio = "*"
+assert_cmd = "*"
+
+[lib]
+name = "constata_client_lib"
+
+[[bin]]
+name = "constata-cli"
+path = "src/bin.rs"
