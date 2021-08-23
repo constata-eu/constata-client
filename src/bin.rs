@@ -31,6 +31,17 @@ fn main() {
       SubCommand::with_name("fetch-each-proof")
         .about("Downloads a ZIP file containing one self validating HTML proof for each document part.")
         .arg_from_usage("<ID> 'The document unique id'")
+     )
+    .subcommand(
+      SubCommand::with_name("verify-website")
+        .about("\
+          Starts the process of verifying that your public key manages the given website.\
+          Yo must be able to create a file called 'constata_eu_domain_verification.txt' at the website's root level.\
+        ")
+        .arg_from_usage("<URL> 'Your website root URL, must be https (https://example.com)'")
+     )
+    .subcommand(
+      SubCommand::with_name("website-verifications").about("Shows the status of your website verification")
      );
 
   let mut help = vec![];
@@ -102,12 +113,31 @@ fn main() {
     ("fetch-each-proof", Some(sub)) => client
       .fetch_each_proof(&sub.value_of("ID").unwrap())
       .unwrap(),
+    ("verify-website", Some(sub)) =>
+      verify_website_flow(&client, &sub.value_of("URL").expect("URL TO BE SET"))
+        .as_bytes()
+        .to_vec(),
+    ("website-verifications", Some(_)) => client.website_verifications().unwrap().as_bytes().to_vec(),
     _ => help,
   };
 
   use std::io::Write;
   std::io::stdout().write_all(&result).unwrap();
   println!("");
+}
+
+fn verify_website_flow(client: &Client, website: &str) -> String {
+  let (_response, signature) = client
+    .verify_website(website.as_bytes())
+    .expect("Verify website to succeed");
+
+  format!("\
+    We have started the validation process for {}.\n\
+    To verify you manage {} we need you to create a file at:\n\
+    {}/constata_eu_domain_verification.txt\n\
+    The file contents should be:\n\
+    {}
+  ", website, website, website, signature)
 }
 
 fn create_config_file() {

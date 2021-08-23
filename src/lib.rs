@@ -105,6 +105,21 @@ impl Client {
     Ok(serde_json::to_string_pretty(&response)?)
   }
 
+  pub fn verify_website(&self, website: &[u8]) -> Result<(String, String)> {
+    let signed_payload = self.signature.sign_message(&website);
+    let response: serde_json::Value = ureq::post(&format!("{}/pubkey_domain_endorsements/", self.api_url))
+      .send_json(ureq::json!({
+        "signed_payload": &signed_payload,
+      }))
+      .map_err(Box::new)?
+      .into_json()?;
+    Ok((serde_json::to_string_pretty(&response)?, signed_payload.signature.to_string()))
+  }
+
+  pub fn website_verifications(&self) -> Result<String> {
+    self.get_json("/pubkey_domain_endorsements")
+  }
+
   pub fn get_response(&self, url: &str) -> Result<ureq::Response> {
     let payload = ureq::json![{
       "constata_eu_action": url,
