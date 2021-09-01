@@ -1,9 +1,9 @@
 use clap::{crate_authors, crate_name, crate_version, App, SubCommand};
-use constata_client_lib::Client;
+use constata_client_lib::{CliResult, Client, SdkResult, SubcommandResult};
 use dialoguer::{theme::ColorfulTheme, Password, Select};
 
 fn main() {
-  let mut app = App::new(crate_name!())
+    let mut app = App::new(crate_name!())
     .version(crate_version!())
     .author(crate_authors!())
     .about("CLI for Constata.eu's Bitcoin timestamping")
@@ -33,85 +33,110 @@ fn main() {
         .arg_from_usage("<ID> 'The document unique id'")
      );
 
-  let mut help = vec![];
-  app.write_long_help(&mut help).unwrap();
+    let mut help = vec![];
+    app.write_long_help(&mut help).unwrap();
 
-  let matches = app.get_matches();
+    pub fn help_result(help: Vec<u8>) -> SubcommandResult {
+        SubcommandResult::cli_ok(help)
+    }
 
-  let config_path = matches.value_of("config");
+    let matches = app.get_matches();
 
-  if Client::config_needed(config_path) {
-    println!(
-      "\
+    let config_path = matches.value_of("config");
+
+    if Client::config_needed(config_path) {
+        println!(
+            "\
       Constata's API authenticates you using your own private key.\n\
       This key is never sent to our servers, and is stored encrypted in your drive.\n\
       We looked here for a config file named {} and couldn't find any.\n\
       If you already have a config file bring it over, otherwise, we can create one now.
     ",
-      Client::config_path(config_path)
-    );
+            Client::config_path(config_path)
+        );
 
-    let items = vec![
-      "Let's create one now.",
-      "Exit for now. I'll bring my config over.",
-    ];
+        let items = vec![
+            "Let's create one now.",
+            "Exit for now. I'll bring my config over.",
+        ];
 
-    let selection = Select::with_theme(&ColorfulTheme::default())
-      .with_prompt("What do you want to do?")
-      .items(&items)
-      .default(0)
-      .interact()
-      .expect("Need to select an action");
+        let selection = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("What do you want to do?")
+            .items(&items)
+            .default(0)
+            .interact()
+            .expect("Need to select an action");
 
-    if selection == 1 {
-      return println!("Ok, copy your config file here and try again.");
-    } else {
-      create_config_file();
+        if selection == 1 {
+            return println!("Ok, copy your config file here and try again.");
+        } else {
+            create_config_file();
+        }
     }
-  }
 
-  let daily_pass = matches
-    .value_of("password")
-    .map(|i| i.to_string())
-    .unwrap_or_else(|| {
-      Password::with_theme(&ColorfulTheme::default())
-        .with_prompt("Enter your password")
-        .interact()
-        .unwrap()
-    });
+    let daily_pass = matches
+        .value_of("password")
+        .map(|i| i.to_string())
+        .unwrap_or_else(|| {
+            Password::with_theme(&ColorfulTheme::default())
+                .with_prompt("Enter your password")
+                .interact()
+                .unwrap()
+        });
+    //TODO: Handle this error, but it needs load function to add Error on the result.
+    let client = Client::load(config_path, &daily_pass).unwrap();
 
-  let client = Client::load(config_path, &daily_pass).unwrap();
+    let result: SubcommandResult = match matches.subcommand() {
+        ("stamp", Some(sub)) => {
+            client.sign_and_timestamp_path(&sub.value_of("FILE").expect("File to be set"))
+        }
+        ("list", Some(_)) => client.documents(),
+        ("show", Some(sub)) => client.document(&sub.value_of("ID").unwrap()),
+        ("fetch-proof", Some(sub)) => client.fetch_proof(&sub.value_of("ID").unwrap(), true),
+        ("fetch-each-proof", Some(sub)) => client.fetch_each_proof(&sub.value_of("ID").unwrap()),
+        _ => help_result(help),
+    };
 
-  let result = match matches.subcommand() {
-    ("stamp", Some(sub)) => client
-      .sign_and_timestamp_path(&sub.value_of("FILE").expect("FILE to be set"))
-      .expect("Sign and timestamp to succeed")
-      .as_bytes()
-      .to_vec(),
-    ("list", Some(_)) => client.documents().unwrap().as_bytes().to_vec(),
-    ("show", Some(sub)) => client
-      .document(&sub.value_of("ID").unwrap())
-      .unwrap()
-      .as_bytes()
-      .to_vec(),
-    ("fetch-proof", Some(sub)) => client
-      .fetch_proof(&sub.value_of("ID").unwrap())
-      .unwrap()
-      .as_bytes()
-      .to_vec(),
-    ("fetch-each-proof", Some(sub)) => client
-      .fetch_each_proof(&sub.value_of("ID").unwrap())
-      .unwrap(),
-    _ => help,
-  };
+    use std::io::Write;
 
-  use std::io::Write;
-  std::io::stdout().write_all(&result).unwrap();
-  println!("");
+    match result {
+        SubcommandResult::Cli(clires) => {
+            match clires {
+                CliResult::Binary(res) => {
+                    match res {
+                        Ok(d) => std::io::stdout().write_all(&d),
+                        Err(error) => std::io::stdout().write_all(&error.as_bytes().to_vec()),
+                    };
+                }
+                CliResult::Json(res) => {
+                    match res {
+                        Ok(_d) => {
+                            //TODO:
+                        }
+                        Err(_error) => {
+                            //TODO:
+                        }
+                    };
+                }
+            };
+        }
+        SubcommandResult::Sdk(sdkres) => {
+            match sdkres {
+                SdkResult::Binary(_res) => {
+                    //TODO:
+                }
+                SdkResult::Json(_res) => {
+                    //TODO:
+                }
+            }
+        }
+    }
+    //std::io::stdout().write_all(&result);
+    println!("");
 }
 
 fn create_config_file() {
-  println!("\
+    println!("\
     You authenticate to our API by signing your requests with your own digital signature.\n\
     This tool will create a private key for you and store it locally on a file in your local drive.\n\
     You can optionally encrypt your key with a daily password, so that anyone with access to the file can't use it.\n\
@@ -129,34 +154,34 @@ fn create_config_file() {
     We suggest you write the master seed words in paper and store them safely.\n\
   ");
 
-  let daily_pass = Password::with_theme(&ColorfulTheme::default())
-    .with_prompt("Type a daily password")
-    .with_confirmation("Repeat password", "Error: the passwords don't match.")
-    .interact()
-    .unwrap();
+    let daily_pass = Password::with_theme(&ColorfulTheme::default())
+        .with_prompt("Type a daily password")
+        .with_confirmation("Repeat password", "Error: the passwords don't match.")
+        .interact()
+        .unwrap();
 
-  let backup_pass = Password::with_theme(&ColorfulTheme::default())
-    .with_prompt("Type a different password for the master seed")
-    .with_confirmation("Repeat password", "Error: the passwords don't match.")
-    .interact()
-    .unwrap();
+    let backup_pass = Password::with_theme(&ColorfulTheme::default())
+        .with_prompt("Type a different password for the master seed")
+        .with_confirmation("Repeat password", "Error: the passwords don't match.")
+        .interact()
+        .unwrap();
 
-  let words = Client::create(None, None, &backup_pass, &daily_pass).unwrap();
+    let words = Client::create(None, None, &backup_pass, &daily_pass).unwrap();
 
-  println!(
-    "\
+    println!(
+        "\
     A file has been created in {} with your private key\n\
     encrypted with your daily password.\n",
-    Client::config_path(None)
-  );
+        Client::config_path(None)
+    );
 
-  println!(
-    "\
+    println!(
+        "\
     Now, we need you to write down these words on paper, in the order they're presented.\n\
     They are your master seed. Don't write down your master seed password though."
-  );
+    );
 
-  for (i, word) in words.iter().enumerate() {
-    println!("{:02}. {}", i + 1, word);
-  }
+    for (i, word) in words.iter().enumerate() {
+        println!("{:02}. {}", i + 1, word);
+    }
 }
