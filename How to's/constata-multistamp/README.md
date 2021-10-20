@@ -47,5 +47,5 @@ Veamos un ejemplo. Para evitar rutas absolutas sumamente largas, recomendamos co
 
 `./constata-multiproof.sh diplomas.csv mipassword`
 
-Observarás que en el mismo directorio se creo una carpeta denominada *proofs_DDMMAAAA* que contiene los certificados *.html* de tus documentos sellados.
+Observarás que en el mismo directorio se creo una carpeta denominada *proofs_DDMMAAAA* que contiene los certificados *.html* de tus documentos sellados.  
 **¡IMPORTANTE! Recuerda asegurarte de que el estado de los documentos sellados sea *published*, de lo contrario deberás esperar a que sean publicados para ejecutar constata-multiproof.sh satisfactoriamente**
