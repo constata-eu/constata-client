@@ -36,7 +36,7 @@ Ya habrás enviado a sellar todos los documentos de tu directorio diplomas. Pued
 
 3) Otórgale permisos de ejecución:
 
-`chdmod +x constata-multiproof`
+`chdmod +x constata-multiproof.sh`
 
 
 Para su ejecución, debes pasarle dos argumentos en orden: en primer lugar, archivo .csv en el que se encuentran los datos de los documentos (document_id y nombre). Aquí utilizarás el csv que generó constata-multistamp.sh y fue almacenado en el mismo directorio en el que ejecutaste constata-multistamp; en segundo lugar, tu password de constata-cli:
@@ -46,3 +46,6 @@ Para su ejecución, debes pasarle dos argumentos en orden: en primer lugar, arch
 Veamos un ejemplo. Para evitar rutas absolutas sumamente largas, recomendamos copiar el directorio que contiene los documentos a sellar en el mismo directorio desde el que ejecutas constata-cli. Si nuestro archivo csv se llama "diplomas.csv", entonces el comando de ejecución es:
 
 `./constata-multiproof.sh diplomas.csv mipassword`
+
+Observarás que en el mismo directorio se creo una carpeta denominada *proofs_DDMMAAAA* que contiene los certificados *.html* de tus documentos sellados.
+**¡IMPORTANTE! Recuerda asegurarte de que el estado de los documentos sellados sea *published*, de lo contrario deberás esperar a que sean publicados para ejecutar constata-multiproof.sh satisfactoriamente**
