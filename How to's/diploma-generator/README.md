@@ -28,10 +28,10 @@ para ello debes incluir las palabras reservadas que se reemplazarán por los dat
 Palabras reservadas (en MAYÚSCULAS): dato por el que será reemplazada
 
 *NAME: Nombre completo*  
-*CERTNAM, Nombre del certificado*  
-*REASON, Motivo o Curso realizado*  
-*DATEOF, Fecha*  
-*SITE, Lugar*
+*CERTNAM: Nombre del certificado*  
+*REASON: Motivo o Curso realizado*  
+*DATEOF: Fecha*  
+*SITE: Lugar*
 
 #### Ejecutar diploma-generator.sh
 Si ya tuviste en cuenta la función de los archivos alum.csv y template.html, es momento de ejecutar el script diploma-generator.sh
