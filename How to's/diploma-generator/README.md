@@ -38,7 +38,7 @@ Si ya tuviste en cuenta la función de los archivos alum.csv y template.html, es
 
 #### Le otorgamos permisos de ejecución
 
-`chdmod +x diploma-generator.sh`
+`chmod +x diploma-generator.sh`
 
 #### Lo ejecutas
 
