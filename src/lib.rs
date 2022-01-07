@@ -156,4 +156,8 @@ impl Client {
       .read_to_end(&mut bytes)?;
     Ok(bytes)
   }
+
+  pub fn account_state(&self) -> Result<String> {
+    self.get_json("/account_state")
+  }
 }

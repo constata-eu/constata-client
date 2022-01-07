@@ -31,7 +31,11 @@ fn main() {
       SubCommand::with_name("fetch-each-proof")
         .about("Downloads a ZIP file containing one self validating HTML proof for each document part.")
         .arg_from_usage("<ID> 'The document unique id'")
-     );
+     )
+    .subcommand(
+      SubCommand::with_name("account-state")
+      .about("Show person's account state including token balance and documents pending to be stamped")
+    );
 
   let mut help = vec![];
   app.write_long_help(&mut help).unwrap();
@@ -102,6 +106,8 @@ fn main() {
     ("fetch-each-proof", Some(sub)) => client
       .fetch_each_proof(&sub.value_of("ID").unwrap())
       .unwrap(),
+    ("account-state", Some(_)) => client
+      .account_state().unwrap().as_bytes().to_vec(),
     _ => help,
   };
 
