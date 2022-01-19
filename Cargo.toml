@@ -20,6 +20,15 @@ bitcoin-wallet = { git = "https://github.com/rust-bitcoin/rust-wallet" }
 thiserror = "1.0"
 sha2 = "0.9.2"
 
+# Add openssl-sys as a direct dependency so it can be cross compiled to
+# x86_64-unknown-linux-musl using the "vendored" feature below
+openssl-sys = "*"
+
+[features]
+# Force openssl-sys to staticly link in the openssl library. Necessary when
+# cross compiling to x86_64-unknown-linux-musl.
+vendored = ["openssl-sys/vendored"]
+
 [dependencies.bitcoin]
 version = "0.26.0"
 features = ["base64", "use-serde"]

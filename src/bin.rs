@@ -39,10 +39,14 @@ fn main() {
           Yo must be able to create a file called 'constata_eu_domain_verification.txt' at the website's root level.\
         ")
         .arg_from_usage("<URL> 'Your website root URL, must be https (https://example.com)'")
-     )
+    )
     .subcommand(
       SubCommand::with_name("website-verifications").about("Shows the status of your website verification")
-     );
+    )
+    .subcommand(
+      SubCommand::with_name("account-state")
+      .about("Show person's account state including token balance and documents pending to be stamped")
+    );
 
   let mut help = vec![];
   app.write_long_help(&mut help).unwrap();
@@ -118,6 +122,8 @@ fn main() {
         .as_bytes()
         .to_vec(),
     ("website-verifications", Some(_)) => client.website_verifications().unwrap().as_bytes().to_vec(),
+    ("account-state", Some(_)) => client
+      .account_state().unwrap().as_bytes().to_vec(),
     _ => help,
   };
 
