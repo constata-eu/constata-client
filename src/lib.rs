@@ -148,6 +148,7 @@ impl Client {
     let file_path = match std::fs::read(path) {
       Ok(res) => res,
       Err(ref e) if e.raw_os_error() == Some(21) => panic!("{} is a directory. Stamping could only be applied on files. If you want to stamp an entire directory, consider compress it into a zip file", path),
+      Err(ref e) if e.raw_os_error() == Some(2) => panic!("File not found using path {}", path),
       Err(err) => return Err(err.into()),
     };
     self.sign_and_timestamp(&file_path)
@@ -184,28 +185,49 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use mockito;
-    use cool_asserts::assert_panics;
+  use super::*;
+  use mockito;
+  use cool_asserts::assert_panics;
 
-    #[test]
-    fn is_a_directory_friendly_response() {
-      let (config, _mnemonic) = Signature::create("production", "very_secret", "not_so_secret").unwrap();
-      let signature = Signature::load(config, "not_so_secret").unwrap();
+  #[test]
+  fn is_a_directory_friendly_response() {
+    let (config, _mnemonic) = Signature::create("production", "very_secret", "not_so_secret").unwrap();
+    let signature = Signature::load(config, "not_so_secret").unwrap();
 
-      let api_url = mockito::server_url();
-      let client = Client { signature, api_url };
-      let mock = mockito::mock("POST", "/documents")
-          .with_status(200)
-          .expect(0)
-          .create();
+    let api_url = mockito::server_url();
+    let client = Client { signature, api_url };
+    let mock = mockito::mock("POST", "/documents")
+        .with_status(200)
+        .expect(0)
+        .create();
 
 
-      assert_panics!(
-        client.sign_and_timestamp_path(&"./".to_string()),
-        includes("./ is a directory. Stamping could only be applied")
-      );
+    assert_panics!(
+      client.sign_and_timestamp_path(&"./".to_string()),
+      includes("./ is a directory. Stamping could only be applied")
+    );
 
-      mock.assert();
-    }
+    mock.assert();
   }
+
+  #[test]
+  fn file_not_found_friendly_response() {
+    let (config, _mnemonic) = Signature::create("production", "very_secret", "not_so_secret").unwrap();
+    let signature = Signature::load(config, "not_so_secret").unwrap();
+
+    let api_url = mockito::server_url();
+    let client = Client { signature, api_url };
+    let mock = mockito::mock("POST", "/documents")
+        .with_status(200)
+        .expect(0)
+        .create();
+
+
+    assert_panics!(
+      client.sign_and_timestamp_path(&"./cuca".to_string()),
+      includes("File not found using path ./cuca")
+    );
+
+    mock.assert();
+  }
+}
