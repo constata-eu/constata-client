@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use bitcoin::PublicKey;
 
+use dialoguer::console::{Emoji, style};
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
   #[error(transparent)]
@@ -147,8 +149,14 @@ impl Client {
   pub fn sign_and_timestamp_path(&self, path: &str) -> Result<String> {
     let file_path = match std::fs::read(path) {
       Ok(res) => res,
-      Err(ref e) if e.raw_os_error() == Some(21) => panic!("{} is a directory. Stamping could only be applied on files. If you want to stamp an entire directory, consider compress it into a zip file", path),
-      Err(ref e) if e.raw_os_error() == Some(2) => panic!("File not found using path {}", path),
+      Err(ref e) if e.raw_os_error() == Some(21) => {
+        eprintln!("\n{} {} is a directory. Stamping could only be applied on files.\n   If you want to stamp an entire directory, consider compress it into a zip file\n", Emoji("🚨", "*"), style(path).bold().bright());
+        std::process::exit(1); // Exit with code 1 (fail)
+      },
+      Err(ref e) if e.raw_os_error() == Some(2) => {
+        eprintln!("\n{} File not found using path {}\n", Emoji("🚨", "*"), path);
+        std::process::exit(1); // Exit with code 1 (fail)
+      },
       Err(err) => return Err(err.into()),
     };
     self.sign_and_timestamp(&file_path)
@@ -187,45 +195,33 @@ impl Client {
 mod tests {
   use super::*;
   use mockito;
-  use cool_asserts::assert_panics;
 
   #[test]
-  fn is_a_directory_friendly_response() {
+  fn account_state_response() {
     let (config, _mnemonic) = Signature::create("production", "very_secret", "not_so_secret").unwrap();
     let signature = Signature::load(config, "not_so_secret").unwrap();
 
     let api_url = mockito::server_url();
     let client = Client { signature, api_url };
-    let mock = mockito::mock("POST", "/documents")
+    let mock = mockito::mock("GET", "/account_state")
         .with_status(200)
-        .expect(0)
+        .with_header("content-type", "application/json")
+        .with_body(r#"{"invoices": [], "missing": "1", "parked_count": 1, "person_id": 19, "token_balance": "0", "total_document_count": 367}"#)
+        .expect(1)
         .create();
 
+    let json_response = client.account_state().unwrap();
 
-    assert_panics!(
-      client.sign_and_timestamp_path(&"./".to_string()),
-      includes("./ is a directory. Stamping could only be applied")
-    );
-
-    mock.assert();
-  }
-
-  #[test]
-  fn file_not_found_friendly_response() {
-    let (config, _mnemonic) = Signature::create("production", "very_secret", "not_so_secret").unwrap();
-    let signature = Signature::load(config, "not_so_secret").unwrap();
-
-    let api_url = mockito::server_url();
-    let client = Client { signature, api_url };
-    let mock = mockito::mock("POST", "/documents")
-        .with_status(200)
-        .expect(0)
-        .create();
-
-
-    assert_panics!(
-      client.sign_and_timestamp_path(&"./cuca".to_string()),
-      includes("File not found using path ./cuca")
+    assert_eq!(
+      json_response,
+r#"{
+  "invoices": [],
+  "missing": "1",
+  "parked_count": 1,
+  "person_id": 19,
+  "token_balance": "0",
+  "total_document_count": 367
+}"#.to_string()
     );
 
     mock.assert();
