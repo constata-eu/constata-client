@@ -5,6 +5,7 @@ use signature::Signature;
 
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use serde_json::Number;
 use bitcoin::PublicKey;
 
 use dialoguer::console::{Emoji, style};
@@ -32,6 +33,15 @@ pub enum Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Serialize, Deserialize)]
+struct AccountState {
+  missing: String,
+  parked_count: Number,
+  person_id: Number,
+  token_balance: String,
+  total_document_count: Number
+}
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -187,7 +197,8 @@ impl Client {
   }
 
   pub fn account_state(&self) -> Result<String> {
-    self.get_json("/account_state")
+    let response: AccountState = self.get_response("/account_state")?.into_json()?;
+    Ok(serde_json::to_string_pretty(&response)?)
   }
 }
 
@@ -215,7 +226,6 @@ mod tests {
     assert_eq!(
       json_response,
 r#"{
-  "invoices": [],
   "missing": "1",
   "parked_count": 1,
   "person_id": 19,
