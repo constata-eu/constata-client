@@ -160,11 +160,11 @@ impl Client {
     let file_path = match std::fs::read(path) {
       Ok(res) => res,
       Err(ref e) if e.raw_os_error() == Some(21) => {
-        eprintln!("\n{} {} is a directory. Stamping could only be applied on files.\n   If you want to stamp an entire directory, consider compress it into a zip file\n", Emoji("🚨", "*"), style(path).bold().bright());
+        eprintln!("\n {} {} is a directory. Stamping could only be applied on files.\n   If you want to stamp an entire directory, consider compress it into a zip file\n", Emoji("🚨", "*"), style(path).bold().bright());
         std::process::exit(1); // Exit with code 1 (fail)
       },
       Err(ref e) if e.raw_os_error() == Some(2) => {
-        eprintln!("\n{} File not found using path {}\n", Emoji("🚨", "*"), path);
+        eprintln!("\n {} File not found using path {}\n", Emoji("🚨", "*"), style(path).bold().bright());
         std::process::exit(1); // Exit with code 1 (fail)
       },
       Err(err) => return Err(err.into()),
