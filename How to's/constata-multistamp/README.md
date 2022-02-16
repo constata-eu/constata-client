@@ -39,7 +39,7 @@ Cada archivo que enviaste es interpretado por constata como un documento al que 
 Puedes usar el identificador de cada documento para consultar su estado y otros datos relacionados usando:
 `constata-cli show <identificador del documento>`
 
-También uedes constular el listado de los documentos que hayas enviado a constata históricamente usando
+También puedes consutlar el listado de los documentos que hayas enviado a constata históricamente usando
 `constata-cli list`
 
 ***
