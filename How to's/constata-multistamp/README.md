@@ -1,12 +1,20 @@
-# Casos de Uso
+# Firmar digitalmente y sellar de tiempo varios documentos
 
-Si deseas sellar varios documentos, puede resultar una tarea repetitiva en la que ocupas mucho de tu tiempo. Por ejemplo, si perteneces a una institución educativa y necesitas sellar diplomas o certificados de tus cursos para un número considerable de personas.
-En ese caso, puedes utilizar nuestro script constata-multistamp. Se trata de un sencillo script escrito en *bash* que puedes <a href="#!">descargar de nuestro repositorio</a>.  
-**Si necesitas asistencia para la integración de nuestro servicio a tu proyecto, contáctate con nosotros.**
+Es posible que quieras firmar y sellar varios documentos en un único proceso, por ejemplo si perteneces a una institución educativa sellando los diplomas de todos tus alumnos.
+
+Para eso te ofrecemos este script constata-multistamp, escrito en *bash* (probado en linux/mac) que puedes ver y descargar de este mismo repositorio.
+
+**Nos interesa saber como estás usando nuestro API y como podemos facilitarte el trabajo. Escríbenos sin compromiso a <a href="mailto:hola@constata.eu">hola@constata.eu</a>**
+
+### Requisitos previos
+
+- [Descargar y ejecutar constata-cli](https://github.com/constata-eu/constata-client), para crear tu firma digital y darte de alta en nuestro API.
+
+- Un directorio con archivos que quieras sellar. Si eres de una institución educativa y todavía no sabes como generar los diplomas para tus alumnos, te recomendamos [ver nuestro generador de diplomas](https://github.com/constata-eu/constata-client/tree/main/How%20to's/diploma-generator)
 
 ***
 
-### Firma múltiples documentos
+### Pedido de firma y sellado
 
 1) Copia o descarga el script constata-multistamp.sh que se encuentra en este directorio.
 
@@ -18,17 +26,29 @@ En ese caso, puedes utilizar nuestro script constata-multistamp. Se trata de un 
 
 Para su ejecución, debes pasarle dos argumentos en orden: en primer lugar, el directorio en el que se encuentran todos los documentos a sellar; en segundo lugar, tu password de constata-cli.
 
-    ./constata-multistamp.sh [DIRECTORIO] [PASSWORD]
+    ./constata-multistamp.sh DIRECTORIO PASSWORD
 
-Veamos un ejemplo. Para evitar rutas absolutas sumamente largas, recomendamos copiar el directorio que contiene los documentos a sellar en el mismo directorio desde el que ejecutas constata-cli. Si nuestra carpeta se llama "diploma", entonces el comando de ejecución es:
+Veamos un ejemplo. Para evitar rutas absolutas sumamente largas, recomendamos copiar el directorio que contiene los documentos a sellar en el mismo directorio desde el que ejecutas constata-cli. Si nuestro directorio se llama "diplomas", entonces el comando de ejecución es:
 
 `./constata-multistamp diplomas mipassword`
 
-Ya habrás enviado a sellar todos los documentos de tu directorio diplomas. Puedes revisarlo con el subcomando list. Además se ha generado un csv, en este ejemplo diplomas.csv, que contiene el nombre del archivo junto a su document_id y puedes consultar particularmente cada documento gracias al comando show. Este csv creado, podrás utilizarlo para descargar todos los certificados html en un solo para, como se explica en el siguiente punto.
+Con este comando ya se envían a sellar todos los archivos de tu directorio diplomas, ahora solo queda esperar aproximadamente una hora, hasta que todos reciban el sello de tiempo.
+
+Cada archivo que enviaste es interpretado por constata como un documento al que le asignamos un identificador único. El script constata-multistamp genera un archivo 'csv' (diplomas.csv en este ejemplo) donde lista todos los identificadores únicos de cada documento asociados al nombre de archivo original que enviaste a sellar. El siguiente paso utiliza este archivo csv para descargar todos los certificados de sello de tiempo usando el API de constata.
+
+Puedes usar el identificador de cada documento para consultar su estado y otros datos relacionados usando:
+`constata-cli show <identificador del documento>`
+
+También uedes constular el listado de los documentos que hayas enviado a constata históricamente usando
+`constata-cli list`
 
 ***
 
-### Descarga múltiples certificados
+### Luego, descarga de los sellos.
+
+Aproximadamente 90 minutos después de enviar tus archivos, los documentos ya deberían haber recibido su sello de tiempo.
+
+Si intentas ejecutar este script antes de que todos reciban el sello de tiempo, verás un mensaje pidiéndote esperar más.
 
 1) Copia o descarga el script constata-multiproof.sh que se encuentra en este directorio.
 
@@ -38,14 +58,16 @@ Ya habrás enviado a sellar todos los documentos de tu directorio diplomas. Pued
 
 `chdmod +x constata-multiproof.sh`
 
-
 Para su ejecución, debes pasarle dos argumentos en orden: en primer lugar, archivo .csv en el que se encuentran los datos de los documentos (document_id y nombre). Aquí utilizarás el csv que generó constata-multistamp.sh y fue almacenado en el mismo directorio en el que ejecutaste constata-multistamp; en segundo lugar, tu password de constata-cli:
 
-    ./constata-multiproof.sh [CSV] [PASSWORD]
+    ./constata-multiproof.sh CSV PASSWORD
 
 Veamos un ejemplo. Para evitar rutas absolutas sumamente largas, recomendamos copiar el directorio que contiene los documentos a sellar en el mismo directorio desde el que ejecutas constata-cli. Si nuestro archivo csv se llama "diplomas.csv", entonces el comando de ejecución es:
 
 `./constata-multiproof.sh diplomas.csv mipassword`
 
 Observarás que en el mismo directorio se creo una carpeta denominada *proofs_DDMMAAAA* que contiene los certificados *.html* de tus documentos sellados.  
-**¡IMPORTANTE! Recuerda asegurarte de que el estado de los documentos sellados sea *published*, de lo contrario deberás esperar a que sean publicados para ejecutar constata-multiproof.sh satisfactoriamente**
+
+Esos archivos HTML generados son los certificados de sello de tiempo con el diploma de cada alumno. Puedes enviarle a cada uno su certificado html adjuntándolo en un correo electrónico, por telegram, compartírselo en google drive, o lo que prefieras.
+
+El certificado de sello de tiempo contiene todos los documentos originales y la información necesaria para validar el sello recibido en cualquier momento del futuro. Es una cápsula de tiempo de información digital que tiene plena validez por si misma, y recomendamos que cada interesado guarde una copia.
