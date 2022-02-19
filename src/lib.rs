@@ -121,14 +121,25 @@ impl Client {
     Ok(Client { signature, api_url })
   }
 
-  pub fn sign_and_timestamp(&self, bytes: &[u8]) -> Result<String> {
-    let response: serde_json::Value = ureq::post(&format!("{}/documents/", self.api_url))
+  pub fn sign_and_timestamp(&self, bytes: &[u8], api_response: bool) -> Result<String> {
+    let response: DocumentBundle = ureq::post(&format!("{}/documents/", self.api_url))
       .send_json(ureq::json!({
         "signed_payload": self.signature.sign_message(&bytes),
       }))
       .map_err(Box::new)?
       .into_json()?;
-    Ok(serde_json::to_string_pretty(&response)?)
+    if api_response {
+      Ok(serde_json::to_string_pretty(&response)?)
+    } else {
+      println!("{} {}", style("Document state:").bold().bright(), response.state);
+      println!("{} {}", style("Document id:").bold().bright(), response.id);
+      println!("{} {}", style("Cost:").bold().bright(), response.cost);
+      println!("{} {}", style("Created At:").bold().bright(), response.created_at);
+      println!("{} {}", style("Buy token link:").bold().bright(), response.buy_tokens_link);
+
+      Ok("".to_string())
+    }
+    
   }
 
   pub fn verify_website(&self, website: &[u8]) -> Result<(String, String)> {
@@ -170,7 +181,7 @@ impl Client {
     Ok(serde_json::to_string_pretty(&response)?)
   }
 
-  pub fn sign_and_timestamp_path(&self, path: &str) -> Result<String> {
+  pub fn sign_and_timestamp_path(&self, path: &str, api_response: bool) -> Result<String> {
     let file_path = match std::fs::read(path) {
       Ok(res) => res,
       Err(ref e) if e.raw_os_error() == Some(21) => {
@@ -183,11 +194,17 @@ impl Client {
       },
       Err(err) => return Err(err.into()),
     };
-    self.sign_and_timestamp(&file_path)
+    self.sign_and_timestamp(&file_path, api_response)
   }
 
   pub fn documents(&self) -> Result<String> {
     self.get_json("/documents")
+  }
+
+  pub fn list_documents(&self) -> Result<String> {
+    let documents: Vec<DocumentBundle> = serde_json::from_slice(self.get_json("/documents").unwrap().as_bytes())?;
+    println!("\n {} {} {}\n", Emoji("📑", "*"), style("Total Documents:").bold().bright(), documents.len());
+    Ok("".to_string())
   }
 
   pub fn document(&self, document_id: &str) -> Result<String> {
