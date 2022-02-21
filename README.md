@@ -1,5 +1,5 @@
 # constata-cli
-Puedes utilizar constata-client para sellar tus documentos (cuentas con hata diez tokens mensuales sin costo para hacerlo).
+Puedes utilizar constata-client para sellar tus documentos (cuentas con hasta diez tokens mensuales sin costo para hacerlo).
 
 Si necesitas más información puedes consultar nuestra [wiki](https://github.com/constata-eu/constata-client/wiki) en donde encontrarás [documentación](https://github.com/constata-eu/constata-client/wiki) de uso más detallada.
 
