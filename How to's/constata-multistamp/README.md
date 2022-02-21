@@ -2,15 +2,15 @@
 
 Es posible que quieras firmar y sellar varios documentos en un único proceso, por ejemplo si perteneces a una institución educativa sellando los diplomas de todos tus alumnos.
 
-Para eso te ofrecemos este script constata-multistamp, escrito en *bash* (probado en linux/mac) que puedes ver y descargar de este mismo repositorio.
+Para eso te ofrecemos este script constata-multistamp, escrito en *bash* (probado en Linux y Mac) que puedes ver y descargar de este mismo repositorio.
 
-**Nos interesa saber como estás usando nuestro API y como podemos facilitarte el trabajo. Escríbenos sin compromiso a <a href="mailto:hola@constata.eu">hola@constata.eu</a>**
+**Nos interesa saber como estás usando nuestro API y cómo podemos facilitarte el trabajo. Escríbenos sin compromiso a <a href="mailto:hola@constata.eu">hola@constata.eu</a>**
 
 ### Requisitos previos
 
 - [Descargar y ejecutar constata-cli](https://github.com/constata-eu/constata-client), para crear tu firma digital y darte de alta en nuestro API.
 
-- Un directorio con archivos que quieras sellar. Si eres de una institución educativa y todavía no sabes como generar los diplomas para tus alumnos, te recomendamos [ver nuestro generador de diplomas](https://github.com/constata-eu/constata-client/tree/main/How%20to's/diploma-generator)
+- Un directorio con archivos que quieras sellar. Si eres de una institución educativa y todavía no sabes cómo generar los diplomas para tus alumnos, te recomendamos [ver nuestro generador de diplomas](https://github.com/constata-eu/constata-client/tree/main/How%20to's/diploma-generator)
 
 ***
 
@@ -38,6 +38,7 @@ Cada archivo que enviaste es interpretado por constata como un documento al que 
 
 Puedes usar el identificador de cada documento para consultar su estado y otros datos relacionados usando:
 `constata-cli show <identificador del documento>`
+Pero no te preocupes, si tus documentos aún no han sido publicados, el siguiente script, constata-multiproof, lo chequeará y te informará.
 
 También puedes consutlar el listado de los documentos que hayas enviado a constata históricamente usando
 `constata-cli list`
@@ -66,8 +67,8 @@ Veamos un ejemplo. Para evitar rutas absolutas sumamente largas, recomendamos co
 
 `./constata-multiproof.sh diplomas.csv mipassword`
 
-Observarás que en el mismo directorio se creo una carpeta denominada *proofs_DDMMAAAA* que contiene los certificados *.html* de tus documentos sellados.  
+Observarás que en el mismo directorio se creo una carpeta denominada *certificados_NOMBREDELARCHIVOCSV* -en este ejemplo "certificados_diplomas"- que contiene los certificados *.html* de tus documentos sellados.  
 
-Esos archivos HTML generados son los certificados de sello de tiempo con el diploma de cada alumno. Puedes enviarle a cada uno su certificado html adjuntándolo en un correo electrónico, por telegram, compartírselo en google drive, o lo que prefieras.
+Esos archivos HTML generados son los certificados de sello de tiempo con el diploma de cada alumno. Puedes enviarle a cada uno su certificado html adjuntándolo en un correo electrónico, por Telegram, compartírselo en Google Drive o lo que prefieras.
 
-El certificado de sello de tiempo contiene todos los documentos originales y la información necesaria para validar el sello recibido en cualquier momento del futuro. Es una cápsula de tiempo de información digital que tiene plena validez por si misma, y recomendamos que cada interesado guarde una copia.
+El certificado de sello de tiempo contiene todos los documentos originales y la información necesaria para validar el sello recibido en cualquier momento del futuro. Es una cápsula de tiempo de información digital que tiene plena validez por si misma y recomendamos que cada interesado guarde una copia.
