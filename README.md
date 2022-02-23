@@ -16,7 +16,13 @@ Se trata de un sello de tiempo (timestamping) almacenado en el blockchain de Bit
 [constata-cli-macos](https://github.com/constata-eu/constata-client/releases/download/rc-3/constata-cli-macos)
 
 
-[constata-cli-win.exe](https://github.com/constata-eu/constata-client/releases/download/rc-3/constata-cli-win.exe) 
+[constata-cli-win.exe](https://github.com/constata-eu/constata-client/releases/download/rc-3/constata-cli-win.exe)  
+
+
+Dale permisos de ejecución y ejecútalo
+
+    chmod +x constata-cli
+    ./constata-cli
 
 ***
 2. Crea las credenciales 
@@ -40,7 +46,7 @@ Observarás esto en pantalla, debes seguir las instrucciones para generar tu cla
 Para selalr un documento, simplemente ejecutas ./constata-cli-linux stamp *[DOCUMENTO]*  
 Por ejemplo:
 
-`./constata-cli-linux stamp mi_certificado.pdf`
+`./constata-cli stamp mi_certificado.pdf`
 
 Una vez presiones ENTER, te solicitará tu clave habitual
 
@@ -98,11 +104,11 @@ la API de Constata (con conexión a Internet).
 
 Para descargar un certificado utilizas el subcomando fetch-proof seguido del "document_id" y rediriges la salida hacia el nombre que deseas para tu certificado html:
 
-*./constata-cli-linux fetch-proof DOCUMENT_ID > NOMBRE_DEL_CERTIFICADO.html*
+*./constata-cli fetch-proof DOCUMENT_ID > NOMBRE_DEL_CERTIFICADO.html*
 
 Por ejemplo,
 
-`./constata-cli-linux fetch-proof 12-978ee01df6b3558105de59de795cfaa5e0acf3fc44c8958d81e77c832bc709cd > mi_certificado.html`
+`./constata-cli fetch-proof 12-978ee01df6b3558105de59de795cfaa5e0acf3fc44c8958d81e77c832bc709cd > mi_certificado.html`
 
 
 Abre el html autocontenido con tu navegador web preferido para verificarlo:
