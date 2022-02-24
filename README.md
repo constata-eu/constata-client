@@ -43,7 +43,7 @@ Observarás esto en pantalla, debes seguir las instrucciones para generar tu cla
 ***
 3. Sella un documento
 
-Para selalr un documento, simplemente ejecutas ./constata-cli-linux stamp *[DOCUMENTO]*  
+Para sellar un documento, simplemente ejecutas ./constata-cli-linux stamp *[DOCUMENTO]*  
 Por ejemplo:
 
 `./constata-cli stamp mi_certificado.pdf`
@@ -91,7 +91,9 @@ Luego observarás la siguiente salida:
 
 Aquí hay dos líneas muy importantes: "state" y "document_id". Puedes observar "state": "Draft", esto significa que el boletín en el que está incluido el sellado de tu documento aún no ha sido publicado y se encuentra como draft (borrador). Luego cambiará a submitted (enviado) y, finalmente, será publicado y podrás observar "state: published".
 
-"document_id" es la cadena de caracteres que identifica a tu documento, puedes observar en nuestra salida d ejemplo "document_id": "12-978ee01df6b3558105de59de795cfaa5e0acf3fc44c8958d81e77c832bc709cd". Nos será de utilidad para hacer consultas sobre el estado de este documento.
+"document_id" es la cadena de caracteres que identifica a tu documento, puedes observar en nuestra salida de ejemplo "document_id": "12-978ee01df6b3558105de59de795cfaa5e0acf3fc44c8958d81e77c832bc709cd". Nos será de utilidad para hacer consultas sobre el estado de este documento a través del subcomando show de la siguiente forma.
+
+        ./constata-cli show DOCUMENT_ID
 
 ***
 4. Descarga el certificado
@@ -116,7 +118,7 @@ Abre el html autocontenido con tu navegador web preferido para verificarlo:
 `google-chrome NOMBRE_DEL_CERTIFICADO.html`
 
 ***
-5. Si utilizas los diez tokens sin costo, al hacer stamp verás en la salida una url en el campo buy_tokens_link. Puedes utilizarla para comprar más tokens. Como ejemplo, puede apreciarse en la última línea de la siguiente salida:
+5. Si utilizas todos tus tokens disponibles, al hacer stamp verás en la salida una url en el campo buy_tokens_link. Puedes utilizarla para comprar más tokens. Como ejemplo, puede apreciarse en la última línea de la siguiente salida:
 
        {
          "bulletin_id": 37,
