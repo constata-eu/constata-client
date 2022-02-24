@@ -43,7 +43,7 @@ Observarás esto en pantalla, debes seguir las instrucciones para generar tu cla
 ***
 3. Sella un documento
 
-Para sellar un documento, simplemente ejecutas ./constata-cli-linux stamp *[DOCUMENTO]*  
+Para sellar un documento, simplemente ejecutas ./constata-cli stamp *[DOCUMENTO]*  
 Por ejemplo:
 
 `./constata-cli stamp mi_certificado.pdf`
