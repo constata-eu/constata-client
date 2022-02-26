@@ -19,6 +19,11 @@ fn main() {
       .subcommand(
         SubCommand::with_name("list").about("List all your documents")
       )
+      .subcommand(
+        SubCommand::with_name("show")
+        .about("Show a document's timestamping status.")
+        .arg_from_usage("<ID> 'The document unique ID'")
+      )
     )
     .subcommand(
       SubCommand::with_name("stamp")
@@ -118,6 +123,12 @@ fn main() {
           .to_vec()
       } else if sub.is_present("list") {
         client.documents().unwrap().as_bytes().to_vec()
+      } else if let Some(show) = sub.subcommand_matches("show") {
+        client
+          .document(&show.value_of("ID").unwrap(), true)
+          .unwrap()
+          .as_bytes()
+          .to_vec()
       } else {
         help
       }
@@ -129,7 +140,7 @@ fn main() {
       .to_vec(),
     ("list", Some(_)) => client.list_documents().unwrap().as_bytes().to_vec(),
     ("show", Some(sub)) => client
-      .document(&sub.value_of("ID").unwrap())
+      .document(&sub.value_of("ID").unwrap(), false)
       .unwrap()
       .as_bytes()
       .to_vec(),
