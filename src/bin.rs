@@ -24,6 +24,9 @@ fn main() {
         .about("Show a document's timestamping status.")
         .arg_from_usage("<ID> 'The document unique ID'")
       )
+      .subcommand(
+        SubCommand::with_name("website-verifications").about("Shows the status of your website verification")
+      )
     )
     .subcommand(
       SubCommand::with_name("stamp")
@@ -129,6 +132,8 @@ fn main() {
           .unwrap()
           .as_bytes()
           .to_vec()
+      } else if sub.is_present("website-verifications") {
+        client.website_verifications(true).unwrap().as_bytes().to_vec()
       } else {
         help
       }
@@ -156,7 +161,7 @@ fn main() {
       verify_website_flow(&client, &sub.value_of("URL").expect("URL TO BE SET"))
         .as_bytes()
         .to_vec(),
-    ("website-verifications", Some(_)) => client.website_verifications().unwrap().as_bytes().to_vec(),
+    ("website-verifications", Some(_)) => client.website_verifications(false).unwrap().as_bytes().to_vec(),
     ("account-state", Some(_)) => client
       .account_state().unwrap().as_bytes().to_vec(),
     _ => help,

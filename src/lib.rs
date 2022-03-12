@@ -56,6 +56,21 @@ struct DocumentBundle {
   buy_tokens_link: Value,
 }
 
+#[derive(Serialize, Deserialize)]
+struct PubkeyDomainEndorsement {
+  attempts: Number,
+  attempts_log: String,
+  bulletin_id: Option<Number>,
+  domain: String,
+  evidence: Option<String>,
+  evidence_hash: Option<String>,
+  id: Number,
+  next_attempt: String,
+  pubkey_id: String,
+  request_signature: String,
+}
+
+
 #[serde_as]
 #[derive(Serialize, Deserialize)]
 pub struct Config {
@@ -153,8 +168,20 @@ impl Client {
     Ok((serde_json::to_string_pretty(&response)?, signed_payload.signature.to_string()))
   }
 
-  pub fn website_verifications(&self) -> Result<String> {
-    self.get_json("/pubkey_domain_endorsements")
+  pub fn website_verifications(&self, api_response: bool) -> Result<String> {
+    if api_response {
+      self.get_json("/pubkey_domain_endorsements")
+    } else {
+      let response: Vec<PubkeyDomainEndorsement> = self.get_response("/pubkey_domain_endorsements")?.into_json()?;
+      for site in response {
+        println!("{} {}", style("Site:").bold().bright(), site.domain);
+        // println!("{} {}", style("Verification state:").bold().bright(), site.state);
+        // if site.state != "accepted" {
+          println!("{} {}\n", style("Attempts:").bold().bright(), site.attempts);
+        // }
+      }
+      Ok("".to_string())
+    }
   }
 
   pub fn get_response(&self, url: &str) -> Result<ureq::Response> {
@@ -381,6 +408,51 @@ r#"{
   "state": "Parked",
   "buy_tokens_link": "https://localhost:8000/invoices/#link_token=boss+almighty+registrar+ashes+unsalted&minimum_suggested=4"
 }"#.to_string()
+    );
+
+    mock.assert();
+  }
+  
+  #[test]
+  fn website_verifications_response() {
+    let (config, _mnemonic) = Signature::create("production", "very_secret", "not_so_secret").unwrap();
+    let signature = Signature::load(config, "not_so_secret").unwrap();
+
+    let api_url = mockito::server_url();
+    let client = Client { signature, api_url };
+    let mock = mockito::mock("GET", "/pubkey_domain_endorsements")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(r#"[{"attempts": 1,"attempts_log": "https://pepe.com/constata_eu_domain_verification.txt: Network Error: timed out reading response\n","bulletin_id": 268,"domain": "https://pepe.com","evidence": null,"evidence_hash": null,"id": 5,"next_attempt": "2022-02-26T11:43:56.024651Z","pubkey_id": "1FhwxxbDsxpA6xmje4LQCKwd5XRBdy8VCa","request_signature": "IBlq311o1WTxLNTrwU4zetJn1hvhTALbXOIIH60Nz6gFcNkBidHBo3UZSlV730w/7kCJUWg8fg6XVyyGnPM1vzQ=","state": "pending"}]"#)
+        .expect(2)
+        .create();
+
+    let json_response = client.website_verifications(true).unwrap();
+
+    assert_eq!(
+      json_response,
+r#"[
+  {
+    "attempts": 1,
+    "attempts_log": "https://pepe.com/constata_eu_domain_verification.txt: Network Error: timed out reading response\n",
+    "bulletin_id": 268,
+    "domain": "https://pepe.com",
+    "evidence": null,
+    "evidence_hash": null,
+    "id": 5,
+    "next_attempt": "2022-02-26T11:43:56.024651Z",
+    "pubkey_id": "1FhwxxbDsxpA6xmje4LQCKwd5XRBdy8VCa",
+    "request_signature": "IBlq311o1WTxLNTrwU4zetJn1hvhTALbXOIIH60Nz6gFcNkBidHBo3UZSlV730w/7kCJUWg8fg6XVyyGnPM1vzQ=",
+    "state": "pending"
+  }
+]"#.to_string()
+    );
+
+    let response = client.website_verifications(false).unwrap();
+
+    assert_eq!(
+      response,
+      ""
     );
 
     mock.assert();
