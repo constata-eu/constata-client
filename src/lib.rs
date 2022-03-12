@@ -68,6 +68,7 @@ struct PubkeyDomainEndorsement {
   next_attempt: String,
   pubkey_id: String,
   request_signature: String,
+  state: String,
 }
 
 
@@ -172,13 +173,13 @@ impl Client {
     if api_response {
       self.get_json("/pubkey_domain_endorsements")
     } else {
-      let response: Vec<PubkeyDomainEndorsement> = self.get_response("/pubkey_domain_endorsements")?.into_json()?;
+      let response: Vec<PubkeyDomainEndorsement> = serde_json::from_slice(self.get_json("/pubkey_domain_endorsements").unwrap().as_bytes())?;
       for site in response {
         println!("{} {}", style("Site:").bold().bright(), site.domain);
-        // println!("{} {}", style("Verification state:").bold().bright(), site.state);
-        // if site.state != "accepted" {
+        println!("{} {}", style("Verification state:").bold().bright(), site.state);
+        if site.state != "accepted" {
           println!("{} {}\n", style("Attempts:").bold().bright(), site.attempts);
-        // }
+        }
       }
       Ok("".to_string())
     }
