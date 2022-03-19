@@ -58,7 +58,10 @@ impl Signature {
 
   pub fn load(stored_key: Config, daily_passphrase: &str) -> Result<Signature> {
     let decrypted = deserialize_and_decrypt(daily_passphrase.as_bytes(), &stored_key.encrypted_key)
-      .map_err(|_| Error::DailyKeyEncriptionError)?;
+      .unwrap_or_else(|_| {
+        eprintln!("\n {} Password incorrect\n", Emoji("🚨", "*"));
+        std::process::exit(1); // Exit with code 1 (fail)
+      });
 
     let key = PrivateKey::from_wif(&String::from_utf8(decrypted)?)?;
 
