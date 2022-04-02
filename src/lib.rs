@@ -45,7 +45,7 @@ struct AccountState {
 
 #[derive(Serialize, Deserialize)]
 struct DocumentBundle {
-  bulletin_id: Number,
+  bulletin_id: Option<Number>,
   cost: String,
   created_at: String,
   gift_id: Value,
@@ -148,7 +148,10 @@ impl Client {
     } else {
       println!("{} {}", style("Document state:").bold().bright(), response.state);
       println!("{} {}", style("Document id:").bold().bright(), response.id);
-      println!("{} {}", style("Bulletin id:").bold().bright(), response.bulletin_id);
+      match response.bulletin_id {
+        Some(bulletin_id) => println!("{} {}", style("Bulletin id:").bold().bright(), bulletin_id),
+        None => {}
+      }
       println!("{} {}", style("Cost:").bold().bright(), response.cost);
       println!("{} {}", style("Created At:").bold().bright(), response.created_at);
       println!("{} {}", style("Buy token link:").bold().bright(), response.buy_tokens_link);
@@ -234,7 +237,7 @@ impl Client {
     println!("{} {} {}", Emoji("📑", "*"), style("Total Documents:").bold().bright(), documents.len());
     println!("{}", style("Document ID / Bulletin ID:").bold().bright());
     for document in documents {
-      println!("  {} / {}", document.id, document.bulletin_id )
+      println!("  {} / {}", document.id, document.bulletin_id.unwrap() )
     }
     Ok("".to_string())
   }
@@ -246,7 +249,7 @@ impl Client {
     } else {
       println!("{} {}", style("Document state:").bold().bright(), response.state);
       println!("{} {}", style("Document id:").bold().bright(), response.id);
-      println!("{} {}", style("Bulletin id:").bold().bright(), response.bulletin_id);
+      println!("{} {}", style("Bulletin id:").bold().bright(), response.bulletin_id.unwrap());
       println!("{} {}", style("Cost:").bold().bright(), response.cost);
       println!("{} {}", style("Created At:").bold().bright(), response.created_at);
       Ok("".to_string())
