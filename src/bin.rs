@@ -10,6 +10,25 @@ fn main() {
     .arg_from_usage("-c, --config=[FILE]  'Sets a custom config file'")
     .arg_from_usage("--password=[PASSWORD] 'Use this daily password. Will prompt for a password if missing.'")
     .subcommand(
+      SubCommand::with_name("api").about("direct call and response from constata API")
+      .subcommand(
+        SubCommand::with_name("stamp")
+          .about("Timestamps a document. Stores a copy in constata's servers.")
+          .arg_from_usage("<FILE> 'Path to the file to upload and timestamp'")
+      )
+      .subcommand(
+        SubCommand::with_name("list").about("List all your documents")
+      )
+      .subcommand(
+        SubCommand::with_name("show")
+        .about("Show a document's timestamping status.")
+        .arg_from_usage("<ID> 'The document unique ID'")
+      )
+      .subcommand(
+        SubCommand::with_name("website-verifications").about("Shows the status of your website verification")
+      )
+    )
+    .subcommand(
       SubCommand::with_name("stamp")
         .about("Timestamps a document. Stores a copy in constata's servers.")
         .arg_from_usage("<FILE> 'Path to the file to upload and timestamp'")
@@ -98,14 +117,35 @@ fn main() {
   let client = Client::load(config_path, &daily_pass).unwrap();
 
   let result = match matches.subcommand() {
+    ("api", Some(sub)) => {
+      if let Some(stamp) = sub.subcommand_matches("stamp") {
+        client
+          .sign_and_timestamp_path(&stamp.value_of("FILE").expect("FILE to be set"), true)
+          .expect("Sign and timestamp to succeed")
+          .as_bytes()
+          .to_vec()
+      } else if sub.is_present("list") {
+        client.documents().unwrap().as_bytes().to_vec()
+      } else if let Some(show) = sub.subcommand_matches("show") {
+        client
+          .document(&show.value_of("ID").unwrap(), true)
+          .unwrap()
+          .as_bytes()
+          .to_vec()
+      } else if sub.is_present("website-verifications") {
+        client.website_verifications(true).unwrap().as_bytes().to_vec()
+      } else {
+        help
+      }
+    },
     ("stamp", Some(sub)) => client
-      .sign_and_timestamp_path(&sub.value_of("FILE").expect("FILE to be set"))
+      .sign_and_timestamp_path(&sub.value_of("FILE").expect("FILE to be set"), false)
       .expect("Sign and timestamp to succeed")
       .as_bytes()
       .to_vec(),
-    ("list", Some(_)) => client.documents().unwrap().as_bytes().to_vec(),
+    ("list", Some(_)) => client.list_documents().unwrap().as_bytes().to_vec(),
     ("show", Some(sub)) => client
-      .document(&sub.value_of("ID").unwrap())
+      .document(&sub.value_of("ID").unwrap(), false)
       .unwrap()
       .as_bytes()
       .to_vec(),
@@ -121,7 +161,7 @@ fn main() {
       verify_website_flow(&client, &sub.value_of("URL").expect("URL TO BE SET"))
         .as_bytes()
         .to_vec(),
-    ("website-verifications", Some(_)) => client.website_verifications().unwrap().as_bytes().to_vec(),
+    ("website-verifications", Some(_)) => client.website_verifications(false).unwrap().as_bytes().to_vec(),
     ("account-state", Some(_)) => client
       .account_state().unwrap().as_bytes().to_vec(),
     _ => help,

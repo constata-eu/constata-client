@@ -5,8 +5,7 @@ use signature::Signature;
 
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use serde_json::Number;
-use serde_json::Value;
+use serde_json::{Number, Value};
 use bitcoin::PublicKey;
 
 use dialoguer::console::{Emoji, style};
@@ -46,7 +45,7 @@ struct AccountState {
 
 #[derive(Serialize, Deserialize)]
 struct DocumentBundle {
-  bulletins: Value,
+  bulletin_id: Option<Number>,
   cost: String,
   created_at: String,
   gift_id: Value,
@@ -56,6 +55,22 @@ struct DocumentBundle {
   state: String,
   buy_tokens_link: Value,
 }
+
+#[derive(Serialize, Deserialize)]
+struct PubkeyDomainEndorsement {
+  attempts: Number,
+  attempts_log: String,
+  bulletin_id: Option<Number>,
+  domain: String,
+  evidence: Option<String>,
+  evidence_hash: Option<String>,
+  id: Number,
+  next_attempt: String,
+  pubkey_id: String,
+  request_signature: String,
+  state: String,
+}
+
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -121,14 +136,29 @@ impl Client {
     Ok(Client { signature, api_url })
   }
 
-  pub fn sign_and_timestamp(&self, bytes: &[u8]) -> Result<String> {
-    let response: serde_json::Value = ureq::post(&format!("{}/documents/", self.api_url))
+  pub fn sign_and_timestamp(&self, bytes: &[u8], api_response: bool) -> Result<String> {
+    let response: DocumentBundle = ureq::post(&format!("{}/documents/", self.api_url))
       .send_json(ureq::json!({
         "signed_payload": self.signature.sign_message(&bytes),
       }))
       .map_err(Box::new)?
       .into_json()?;
-    Ok(serde_json::to_string_pretty(&response)?)
+    if api_response {
+      Ok(serde_json::to_string_pretty(&response)?)
+    } else {
+      println!("{} {}", style("Document state:").bold().bright(), response.state);
+      println!("{} {}", style("Document id:").bold().bright(), response.id);
+      match response.bulletin_id {
+        Some(bulletin_id) => println!("{} {}", style("Bulletin id:").bold().bright(), bulletin_id),
+        None => {}
+      }
+      println!("{} {}", style("Cost:").bold().bright(), response.cost);
+      println!("{} {}", style("Created At:").bold().bright(), response.created_at);
+      println!("{} {}", style("Buy token link:").bold().bright(), response.buy_tokens_link);
+
+      Ok("".to_string())
+    }
+    
   }
 
   pub fn verify_website(&self, website: &[u8]) -> Result<(String, String)> {
@@ -142,8 +172,20 @@ impl Client {
     Ok((serde_json::to_string_pretty(&response)?, signed_payload.signature.to_string()))
   }
 
-  pub fn website_verifications(&self) -> Result<String> {
-    self.get_json("/pubkey_domain_endorsements")
+  pub fn website_verifications(&self, api_response: bool) -> Result<String> {
+    if api_response {
+      self.get_json("/pubkey_domain_endorsements")
+    } else {
+      let response: Vec<PubkeyDomainEndorsement> = serde_json::from_slice(self.get_json("/pubkey_domain_endorsements").unwrap().as_bytes())?;
+      for site in response {
+        println!("{} {}", style("Site:").bold().bright(), site.domain);
+        println!("{} {}", style("Verification state:").bold().bright(), site.state);
+        if site.state != "accepted" {
+          println!("{} {}\n", style("Attempts:").bold().bright(), site.attempts);
+        }
+      }
+      Ok("".to_string())
+    }
   }
 
   pub fn get_response(&self, url: &str) -> Result<ureq::Response> {
@@ -170,7 +212,7 @@ impl Client {
     Ok(serde_json::to_string_pretty(&response)?)
   }
 
-  pub fn sign_and_timestamp_path(&self, path: &str) -> Result<String> {
+  pub fn sign_and_timestamp_path(&self, path: &str, api_response: bool) -> Result<String> {
     let file_path = match std::fs::read(path) {
       Ok(res) => res,
       Err(ref e) if e.raw_os_error() == Some(21) => {
@@ -183,16 +225,35 @@ impl Client {
       },
       Err(err) => return Err(err.into()),
     };
-    self.sign_and_timestamp(&file_path)
+    self.sign_and_timestamp(&file_path, api_response)
   }
 
-  pub fn documents(&self) -> Result<String> {
+  pub fn documents(&self,) -> Result<String> {
     self.get_json("/documents")
   }
 
-  pub fn document(&self, document_id: &str) -> Result<String> {
+  pub fn list_documents(&self) -> Result<String> {
+    let documents: Vec<DocumentBundle> = serde_json::from_slice(self.get_json("/documents").unwrap().as_bytes())?;
+    println!("{} {} {}", Emoji("📑", "*"), style("Total Documents:").bold().bright(), documents.len());
+    println!("{}", style("Document ID / Bulletin ID:").bold().bright());
+    for document in documents {
+      println!("  {} / {}", document.id, document.bulletin_id.unwrap() )
+    }
+    Ok("".to_string())
+  }
+
+  pub fn document(&self, document_id: &str, api_response: bool) -> Result<String> {
     let response: DocumentBundle = self.get_response(&format!("/documents/{}", document_id))?.into_json()?;
-    Ok(serde_json::to_string_pretty(&response)?)
+    if api_response {
+      Ok(serde_json::to_string_pretty(&response)?)
+    } else {
+      println!("{} {}", style("Document state:").bold().bright(), response.state);
+      println!("{} {}", style("Document id:").bold().bright(), response.id);
+      println!("{} {}", style("Bulletin id:").bold().bright(), response.bulletin_id.unwrap());
+      println!("{} {}", style("Cost:").bold().bright(), response.cost);
+      println!("{} {}", style("Created At:").bold().bright(), response.created_at);
+      Ok("".to_string())
+    }
   }
 
   pub fn fetch_proof(&self, document_id: &str) -> Result<String> {
@@ -262,17 +323,16 @@ r#"{
     let mock = mockito::mock("GET", "/documents/1")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"state":"Parked","id":"1-1","person_id":1,"parts":[{"id":"bc","document_id":"1-9","friendly_name":"doc","hash":"9","content_type":"multipart/alternative","size_in_bytes":1410,"signatures":[{"id":4,"document_part_id":"bc","pubkey_id":"mw","signature":"HN","signature_hash":"be","endorsements":[]}],"is_base":true},{"id":"f1","document_id":"1-9","friendly_name":"hello.txt","hash":"68","content_type":"text/plain","size_in_bytes":59,"signatures":[],"is_base":false},{"id":"9f","document_id":"1-9","friendly_name":"unnamed_attachment.txt","hash":"6f","content_type":"text/html","size_in_bytes":94,"signatures":[],"is_base":false},{"id":"b6","document_id":"1-9","friendly_name":"unnamed_attachment.zip","hash":"83","content_type":"application/zip","size_in_bytes":530,"signatures":[],"is_base":false},{"id":"c7","document_id":"1-95","friendly_name":"bar/baz.txt","hash":"bf0","content_type":"text/plain","size_in_bytes":4,"signatures":[],"is_base":false},{"id":"59","document_id":"1-99","friendly_name":"foo.txt","hash":"b5","content_type":"text/plain","size_in_bytes":4,"signatures":[],"is_base":false}],"created_at":"2022-01-05T08:04:47.166681Z","cost":"1","gift_id":null,"bulletins":{},"buy_tokens_link":"https://localhost:8000/invoices/#link_token=boss+almighty+registrar+ashes+unsalted&minimum_suggested=4"}"#)
+        .with_body(r#"{"state":"Parked","id":"1-1","person_id":1,"bulletin_id": 303, "parts":[{"id":"bc","document_id":"1-9","friendly_name":"doc","hash":"9","content_type":"multipart/alternative","size_in_bytes":1410,"signatures":[{"id":4,"document_part_id":"bc","pubkey_id":"mw","signature":"HN","signature_hash":"be","endorsements":[]}],"is_base":true},{"id":"f1","document_id":"1-9","friendly_name":"hello.txt","hash":"68","content_type":"text/plain","size_in_bytes":59,"signatures":[],"is_base":false},{"id":"9f","document_id":"1-9","friendly_name":"unnamed_attachment.txt","hash":"6f","content_type":"text/html","size_in_bytes":94,"signatures":[],"is_base":false},{"id":"b6","document_id":"1-9","friendly_name":"unnamed_attachment.zip","hash":"83","content_type":"application/zip","size_in_bytes":530,"signatures":[],"is_base":false},{"id":"c7","document_id":"1-95","friendly_name":"bar/baz.txt","hash":"bf0","content_type":"text/plain","size_in_bytes":4,"signatures":[],"is_base":false},{"id":"59","document_id":"1-99","friendly_name":"foo.txt","hash":"b5","content_type":"text/plain","size_in_bytes":4,"signatures":[],"is_base":false}],"created_at":"2022-01-05T08:04:47.166681Z","cost":"1","gift_id":null,"bulletins":{},"buy_tokens_link":"https://localhost:8000/invoices/#link_token=boss+almighty+registrar+ashes+unsalted&minimum_suggested=4"}"#)
         .expect(1)
         .create();
 
-    let json_response = client.document(&"1".to_string()).unwrap();
+    let json_response = client.document(&"1".to_string(), true).unwrap();
 
     assert_eq!(
       json_response,
-      
 r#"{
-  "bulletins": {},
+  "bulletin_id": 303,
   "cost": "1",
   "created_at": "2022-01-05T08:04:47.166681Z",
   "gift_id": null,
@@ -352,6 +412,51 @@ r#"{
   "state": "Parked",
   "buy_tokens_link": "https://localhost:8000/invoices/#link_token=boss+almighty+registrar+ashes+unsalted&minimum_suggested=4"
 }"#.to_string()
+    );
+
+    mock.assert();
+  }
+  
+  #[test]
+  fn website_verifications_response() {
+    let (config, _mnemonic) = Signature::create("production", "very_secret", "not_so_secret").unwrap();
+    let signature = Signature::load(config, "not_so_secret").unwrap();
+
+    let api_url = mockito::server_url();
+    let client = Client { signature, api_url };
+    let mock = mockito::mock("GET", "/pubkey_domain_endorsements")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(r#"[{"attempts": 1,"attempts_log": "https://pepe.com/constata_eu_domain_verification.txt: Network Error: timed out reading response\n","bulletin_id": 268,"domain": "https://pepe.com","evidence": null,"evidence_hash": null,"id": 5,"next_attempt": "2022-02-26T11:43:56.024651Z","pubkey_id": "1FhwxxbDsxpA6xmje4LQCKwd5XRBdy8VCa","request_signature": "IBlq311o1WTxLNTrwU4zetJn1hvhTALbXOIIH60Nz6gFcNkBidHBo3UZSlV730w/7kCJUWg8fg6XVyyGnPM1vzQ=","state": "pending"}]"#)
+        .expect(2)
+        .create();
+
+    let json_response = client.website_verifications(true).unwrap();
+
+    assert_eq!(
+      json_response,
+r#"[
+  {
+    "attempts": 1,
+    "attempts_log": "https://pepe.com/constata_eu_domain_verification.txt: Network Error: timed out reading response\n",
+    "bulletin_id": 268,
+    "domain": "https://pepe.com",
+    "evidence": null,
+    "evidence_hash": null,
+    "id": 5,
+    "next_attempt": "2022-02-26T11:43:56.024651Z",
+    "pubkey_id": "1FhwxxbDsxpA6xmje4LQCKwd5XRBdy8VCa",
+    "request_signature": "IBlq311o1WTxLNTrwU4zetJn1hvhTALbXOIIH60Nz6gFcNkBidHBo3UZSlV730w/7kCJUWg8fg6XVyyGnPM1vzQ=",
+    "state": "pending"
+  }
+]"#.to_string()
+    );
+
+    let response = client.website_verifications(false).unwrap();
+
+    assert_eq!(
+      response,
+      ""
     );
 
     mock.assert();
