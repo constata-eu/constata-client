@@ -137,15 +137,18 @@ impl Client {
   }
 
   pub fn sign_and_timestamp(&self, bytes: &[u8], api_response: bool) -> Result<String> {
-    let response: serde_json::Value = match ureq::post(&format!("{}/documents/", self.api_url))
+    use ureq::Error::Status;
+
+    let response: DocumentBundle = match ureq::post(&format!("{}/documents/", self.api_url))
       .send_json(ureq::json!({
         "signed_payload": self.signature.sign_message(&bytes),
       })) {
         Ok(n) => n.into_json()?,
-        Err(e) => {
-          eprintln!("\n {} This document was already stamped: {}\n", Emoji("🚨", "*"), e);
+        Err(Status(422, _)) => {
+          eprintln!("\n {} This document was already stamped\n", Emoji("🚨", "*"));
           std::process::exit(1); // Exit with code 1 (fail)
         },
+        Err(err) => return Err(Error::Network(Box::new(err))),
       };
     if api_response {
       Ok(serde_json::to_string_pretty(&response)?)
