@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use serde_json::{Number, Value};
 use bitcoin::PublicKey;
+use std::collections::HashMap;
 
 use dialoguer::console::{Emoji, style};
 
@@ -42,10 +43,21 @@ struct AccountState {
   token_balance: String,
   total_document_count: Number,
 }
-
+#[derive(Serialize, Deserialize)]
+pub struct Bulletin {
+  id: i32,
+  state: String,
+  started_at: String,
+  hash: Option<String>,
+  transaction: Option<String>,
+  transaction_hash: Option<String>,
+  block_hash: Option<String>,
+  block_time: Option<String>,
+}
 #[derive(Serialize, Deserialize)]
 struct DocumentBundle {
   bulletin_id: Option<Number>,
+  bulletins: HashMap<i64, Bulletin>,
   cost: String,
   created_at: String,
   gift_id: Value,
@@ -254,9 +266,13 @@ impl Client {
     if api_response {
       Ok(serde_json::to_string_pretty(&response)?)
     } else {
+      let bulletin_id = response.bulletin_id.unwrap();
       println!("{} {}", style("Document state:").bold().bright(), response.state);
       println!("{} {}", style("Document id:").bold().bright(), response.id);
-      println!("{} {}", style("Bulletin id:").bold().bright(), response.bulletin_id.unwrap());
+      println!("{} {}", style("Bulletin id:").bold().bright(), bulletin_id);
+      if bulletin_id.is_i64() {
+        println!("{} {}", style("Bulletin state:").bold().bright(), response.bulletins[&bulletin_id.as_i64().expect("must be a number")].state);
+      }
       println!("{} {}", style("Cost:").bold().bright(), response.cost);
       println!("{} {}", style("Created At:").bold().bright(), response.created_at);
       Ok("".to_string())
