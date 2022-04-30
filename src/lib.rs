@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use serde_json::{Number, Value};
 use bitcoin::PublicKey;
+use std::collections::HashMap;
 
 use dialoguer::console::{Emoji, style};
 
@@ -42,10 +43,21 @@ struct AccountState {
   token_balance: String,
   total_document_count: Number,
 }
-
+#[derive(Serialize, Deserialize)]
+pub struct Bulletin {
+  id: i32,
+  state: String,
+  started_at: String,
+  hash: Option<String>,
+  transaction: Option<String>,
+  transaction_hash: Option<String>,
+  block_hash: Option<String>,
+  block_time: Option<String>,
+}
 #[derive(Serialize, Deserialize)]
 struct DocumentBundle {
   bulletin_id: Option<Number>,
+  bulletins: HashMap<i64, Bulletin>,
   cost: String,
   created_at: String,
   gift_id: Value,
@@ -137,12 +149,19 @@ impl Client {
   }
 
   pub fn sign_and_timestamp(&self, bytes: &[u8], api_response: bool) -> Result<String> {
-    let response: DocumentBundle = ureq::post(&format!("{}/documents/", self.api_url))
+    use ureq::Error::Status;
+
+    let response: DocumentBundle = match ureq::post(&format!("{}/documents/", self.api_url))
       .send_json(ureq::json!({
         "signed_payload": self.signature.sign_message(&bytes),
-      }))
-      .map_err(Box::new)?
-      .into_json()?;
+      })) {
+        Ok(n) => n.into_json()?,
+        Err(Status(422, _)) => {
+          eprintln!("\n {} This document was already stamped\n", Emoji("🚨", "*"));
+          std::process::exit(1); // Exit with code 1 (fail)
+        },
+        Err(err) => return Err(Error::Network(Box::new(err))),
+      };
     if api_response {
       Ok(serde_json::to_string_pretty(&response)?)
     } else {
@@ -247,9 +266,13 @@ impl Client {
     if api_response {
       Ok(serde_json::to_string_pretty(&response)?)
     } else {
+      let bulletin_id = response.bulletin_id.unwrap();
       println!("{} {}", style("Document state:").bold().bright(), response.state);
       println!("{} {}", style("Document id:").bold().bright(), response.id);
-      println!("{} {}", style("Bulletin id:").bold().bright(), response.bulletin_id.unwrap());
+      println!("{} {}", style("Bulletin id:").bold().bright(), bulletin_id);
+      if bulletin_id.is_i64() {
+        println!("{} {}", style("Bulletin state:").bold().bright(), response.bulletins[&bulletin_id.as_i64().expect("must be a number")].state);
+      }
       println!("{} {}", style("Cost:").bold().bright(), response.cost);
       println!("{} {}", style("Created At:").bold().bright(), response.created_at);
       Ok("".to_string())
@@ -333,6 +356,7 @@ r#"{
       json_response,
 r#"{
   "bulletin_id": 303,
+  "bulletins": {},
   "cost": "1",
   "created_at": "2022-01-05T08:04:47.166681Z",
   "gift_id": null,
