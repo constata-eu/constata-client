@@ -356,6 +356,7 @@ r#"{
       json_response,
 r#"{
   "bulletin_id": 303,
+  "bulletins": {},
   "cost": "1",
   "created_at": "2022-01-05T08:04:47.166681Z",
   "gift_id": null,
