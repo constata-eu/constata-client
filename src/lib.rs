@@ -148,12 +148,13 @@ impl Client {
     Ok(Client { signature, api_url })
   }
 
-  pub fn sign_and_timestamp(&self, bytes: &[u8], api_response: bool) -> Result<String> {
+  pub fn sign_and_timestamp(&self, bytes: &[u8], filename: &str, api_response: bool) -> Result<String> {
     use ureq::Error::Status;
 
     let response: DocumentBundle = match ureq::post(&format!("{}/documents/", self.api_url))
       .send_json(ureq::json!({
         "signed_payload": self.signature.sign_message(&bytes),
+        "filename": filename,
       })) {
         Ok(n) => n.into_json()?,
         Err(Status(422, _)) => {
@@ -232,6 +233,8 @@ impl Client {
   }
 
   pub fn sign_and_timestamp_path(&self, path: &str, api_response: bool) -> Result<String> {
+    let vector = path.clone().split("/").collect::<Vec<&str>>();
+    let filename = vector[vector.len() - 1];
     let file_path = match std::fs::read(path) {
       Ok(res) => res,
       Err(ref e) if e.raw_os_error() == Some(21) => {
@@ -244,7 +247,7 @@ impl Client {
       },
       Err(err) => return Err(err.into()),
     };
-    self.sign_and_timestamp(&file_path, api_response)
+    self.sign_and_timestamp(&file_path, filename, api_response)
   }
 
   pub fn documents(&self,) -> Result<String> {
