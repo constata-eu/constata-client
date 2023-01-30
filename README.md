@@ -4,7 +4,6 @@ Puedes utilizar constata-client para sellar tus documentos (cuentas con hasta di
 ## ¿Qué es?
 Se trata de un sello de tiempo (timestamping) almacenado en el blockchain de Bitcoin. Una vez sellado y publicado en la red de Bitcoin, puedes descargar un certificado html de tu documento sellado. Además puedes vincular un sitio web con tu public key.
 ***
-## ¿Cómo lo utilizo?  
 
 1. Descarga el binario
 
